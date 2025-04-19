@@ -3,9 +3,11 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:latest
-    container_name: easyshop-mongodb
+    container_name: mongo
     ports:
       - "27017:27017"
+    networks:
+      - ecommerce_network
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -14,42 +16,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    networks:
-      - easyshop-network
 
   migration:
     build:
       context: .
       dockerfile: scripts/Dockerfile.migration
-    container_name: easyshop-migration
+    container_name: ecommerce-migration
     env_file:
-      - .env.local
+      - .env
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
-      - easyshop-network
+      - ecommerce_network
 
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: easyshop
+    container_name: ecommerce-app
     ports:
       - "3000:3000"
     env_file:
-      - .env.local
+      - .env
     depends_on:
       migration:
         condition: service_completed_successfully
     networks:
-      - easyshop-network
+      - ecommerce_network
     restart: unless-stopped
 
 networks:
-  easyshop-network:
-    name: easyshop-network
+  ecommerce_network:
 
 volumes:
   mongodb_data:
-    name: mongodb_data
